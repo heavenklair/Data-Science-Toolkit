@@ -1,0 +1,105 @@
+---
+title: "Decision Tree Classification"
+author: "Heaven Klair"
+date: "6/17/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Decision Tree Classification in R
+
+
+## Importing the dataset
+```{r, echo=TRUE}
+dataset = read.csv('Social_Network_Ads.csv')
+ Age = dataset$Age
+EstimatedSalary = dataset$EstimatedSalary
+Purchased = dataset$Purchased
+
+```
+
+## Encoding the target feature as a factor 
+```{r, echo=TRUE}
+dataset$Purchased = factor(dataset$Purchased, levels = c(0,1))
+```
+
+
+## Splitting the dataset into the Training set and Test set
+
+You can also embed plots, for example:
+
+```{r, echo=TRUE}
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Purchased, SplitRatio = 0.75)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+```
+
+
+## Feature Scaling
+
+```{r, echo=TRUE}
+training_set[-3] = scale(training_set[-3])
+test_set[-3] = scale(test_set[-3])
+```
+
+## Fitting classifier to the Training set
+
+```{r, echo=TRUE}
+library(rpart)
+classifier = rpart(formula = Purchased ~ ., 
+                   data = training_set)
+```
+
+## Predicting the Test set results
+
+```{r, echo=TRUE}
+y_pred = predict(classifier, newdata = test_set[-3])
+y_pred
+```
+Here y_pred is a matrix of 2x100 size. It contains the probabilities. The first column contains the probabilities that the observation the user belong to class zero (doesn't buy the SUV). The second column is the probability that the user belongs to class 1 (Buys the SUV).
+
+
+
+If we do not want the output to be in the above format, we can insert the type function in the following code:
+```{r, echo=TRUE}
+y_pred = predict(classifier, newdata = test_set[-3], type =  'class')
+y_pred
+```
+Thus we see that y_pred is a vector now. For each user in the test set, we have the predictions 0 and 1.
+
+
+
+## Making the Confusion Matrix
+
+The confusion matrix only works when the y_pred is in the vectorized form. So we can create the confusion matrix as below:
+```{r, echo=TRUE}
+cm = table(test_set[, 3], y_pred)
+cm
+```
+
+# Plotting the Decision Tree
+
+We can plot the Decision tree using the below code. Note: Execute both the commands togther to plot the classifier, otherwise it will not run.
+```{r, echo=TRUE}
+plot(classifier)
+text(classifier)
+```
+
+## Visualising the Training set results
+The below code is time and power consuming. That is why we will not run this for now.
+
+```{r, echo=TRUE}
+# install.packages('tidyverse')
+# library(tidyverse)
+# expand.grid('Age' = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01),
+# 'EstimatedSalary' = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01))%>% mutate(prob_set=predict(classifier, type = 'response', newdata = .),
+# y_grid = ifelse(prob_set > 0.5, 1, 0))%>%
+# ggplot() +
+# geom_point(aes(x=Age, y=EstimatedSalary, color=y_grid)) +
+# geom_point(data=training_set, aes(x=Age, y=EstimatedSalary,colour=as.numeric(Purchased)))
+```

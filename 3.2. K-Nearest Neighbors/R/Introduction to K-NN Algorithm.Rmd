@@ -1,0 +1,131 @@
+---
+title: "Introduction to K-NN Algorithm"
+author: "Heaven Klair"
+date: "5/7/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Importing the dataset
+
+```{r, echo=TRUE}
+dataset = read.csv('Social_Network_Ads.csv')
+dataset = dataset[1:3]   #Only take the necessary variables from the dataset
+dataset
+```
+
+## Encoding the target feature as a factor
+
+```{r, echo=TRUE}
+dataset$Purchased = factor(dataset$Purchased, levels = c(0,1))
+```
+
+## Splitting the dataset into the Training and Test set
+
+```{r, echo=TRUE}
+# install.packages('caTools')
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Purchased, SplitRatio = 0.75)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+```
+
+## Feature Scaling
+
+Scale the appropriate variables.
+```{r, echo=TRUE}
+training_set[, -3] = scale(training_set[, -3])
+test_set[, -3] = scale(test_set[, -3])
+```
+
+## Fitting K-NN to the training set and and Predicting the Test Set Results
+
+```{r, echo=TRUE}
+#Create your own classifier here. Below is just an example.
+
+library(class)
+
+y_pred = knn(train = training_set[, -3], 
+             test = test_set[, -3],
+             cl = training_set[, 3],
+             k = 5)
+y_pred
+```
+
+The library to selected K-NN package is called "class".
+
+The Model for knn is as follows:
+
+knn(train, test, cl, k = 1, l = 0, prob = FALSE, use.all = TRUE)
+
+train: matrix or data frame of training set cases.
+
+test: matrix or data frame of test set cases. A vector will be interpreted as a row vector for a single case.
+
+cl: factor of true classifications of training set. The training and test set above are the independent variables, and we need a place to include the information about dependent variables (categorical dependent variable). So "cl" is where we do it.
+
+The output of y_pred are the 100 predictions that K-NN produced.
+
+Look at the dataset and see the first five customers. We see that they did not buy the SUV. Now we look at the predicted results from K-NN, and notice that the algorithm predicted the results correctly (the first five predictions are 0's).
+
+## Making the Confusion Matrix
+
+Confusion Matrix will help us calculate the number of correct and incorrect predictions.
+```{r, echo=TRUE}
+cm = table(test_set[,  3], y_pred)
+cm
+```
+
+We focus on (1,1) and (2,2) elements in the matrix. These two elements are the number of correct predictions. The elements (1,2) and (2,1) are the incorrect predictions.
+
+
+## Visualizing the Training set results
+
+```{r, echo=TRUE}
+library(ggplot2)
+set = training_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+y_grid = knn(train = training_set[, -3], 
+               test = grid_set,
+               cl = training_set[, 3],
+               k = 5)
+
+plot(set[, -3],
+     main = 'Classifier (Training set)',
+     xlab = 'Age', ylab = 'Estimated Salary',
+     xlim = range(X1), ylim = range(X2)) +
+  contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE) +
+  points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato')) +
+  points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+```
+
+
+
+# Visualizing the Test set results
+```{r, echo=TRUE}
+#library(ElemStatLearn)
+set = test_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+y_grid = knn(train = training_set[, -3], 
+               test = grid_set,
+               cl = training_set[, 3],
+               k = 5)
+plot(set[, -3], main = 'Classifier (Test set)',
+     xlab = 'Age', ylab = 'Estimated Salary',
+     xlim = range(X1), ylim = range(X2)) + 
+  contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE) + 
+  points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato')) +
+  points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+```
+
+

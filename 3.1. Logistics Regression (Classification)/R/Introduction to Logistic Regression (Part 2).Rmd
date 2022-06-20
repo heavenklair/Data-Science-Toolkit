@@ -1,0 +1,230 @@
+---
+title: "Introduction to Logistic Regression (Part 2)"
+author: "Heaven Klair"
+date: "5/6/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Importing the dataset
+
+```{r, echo=TRUE}
+url <- "http://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data"
+dataset = read.csv(url, header=FALSE)
+head(dataset)
+```
+
+After importing the data, we see that none of the columns are labeled. So we can name the columns looking at the UCI website. 
+
+```{r, echo=TRUE}
+colnames(dataset) <- c("age", "sex", "cp", "trestbps", "chol", "fbs",
+                       "restecg", "thalach", "exang", "oldpeak", "slope", "ca", 
+                       "thal", "hd")
+head(dataset)
+str(dataset)
+```
+
+Now, we have column names in the dataset. But when we run str() function, we see that some of the columns are messed up. First, sex is a number in the dataset, but it is supposes to be a factor, where 0 represents "female" and 1 represents "male". cp (Chest Pain) is also supposed to be a factor where levels 1-3 represents different types of pain and 4 represents no chest pain. So let' clean the data before we start to use it.
+
+```{r, echo=TRUE}
+dataset[dataset$sex == 0,]$sex <- "F"
+dataset[dataset$sex == 1,]$sex <- "M"
+
+# Now we convert the column into a factor
+dataset$sex <- as.factor(dataset$sex)
+
+# Convert a bunch of other columns into factors
+dataset$cp <- as.factor(dataset$cp)
+dataset$fbs <- as.factor(dataset$fbs)
+dataset$restecg <- as.factor(dataset$restecg)
+dataset$exang <- as.factor(dataset$exang)
+dataset$slope <- as.factor(dataset$slope)
+```
+
+
+Since the ca column is a column of strings (chars), as seen when we ran str(dataset). R things that is a column of char, but instead it has values of integers. We correct that assumption by telling R that it is a column of integers.
+
+```{r, echo=TRUE}
+dataset$ca <- as.integer(dataset$ca)
+dataset$ca <- as.factor(dataset$ca)
+
+# "Thal" column needs the similar correction
+dataset$thal <- as.integer(dataset$thal)
+dataset$thal <- as.factor(dataset$thal)
+```
+
+
+The last thing that we need to do is make *hd* (Heart Disease), a factor that is easy on the eyes. Here, we are going to use a fancy trick with ifelse() to convert the 0's to "Healthy" and 1's to "Unhealthy".
+
+```{r, echo=TRUE}
+dataset$hd <- ifelse(test = dataset$hd == 0, yes = "Healthy", no="Unhealthy")
+dataset$hd <- as.factor(dataset$hd)
+```
+
+Let us check if we have made all the neccessary changes to the data
+```{r, echo=TRUE}
+str(dataset)
+```
+
+It looks like we have made the appropriate changes and are ready to proceed further.
+
+Now we see how many samples (rows of data) have NA values. Later we will decide if we can just toss these samples out, or if we should impute values for the NAs.
+
+```{r, echo=TRUE}
+nrow(dataset[is.na(dataset$ca) | is.na(dataset$thal), ])
+```
+We get that there are 6 samples that have NAs in them. Let us view the samples with NAs by selecting those rows from the dataframe
+ 
+```{r, echo=TRUE}
+dataset[is.na(dataset$ca) | is.na(dataset$thal), ]
+```
+
+Since there are only 6 samples, we will go ahead and remove them from the dataset and proceed further.
+
+```{r, echo=TRUE}
+dataset <- dataset[!(is.na(dataset$ca) | is.na(dataset$thal) ), ]
+nrow(dataset)
+```
+
+Now, let us make sure that healthy and diseased samples come from each gender (male and female). If only male samples have heart diseases, we should probably remove all females from the model. We can do this with the xtabs() function. Since we want a table with heart diseases and sex, so we pass those two columns into the function.
+
+```{r, echo=TRUE}
+xtabs(~ hd + sex, data = dataset)
+```
+
+Healthy and Unhealthy patients are both represented by a lot of female and male samples.
+
+Now, let us verify that all 4 levels of Chest pain (cp) were reported by a bunch of patients.
+
+```{r, echo=TRUE}
+xtabs(~ hd + cp, data = dataset)
+```
+
+We do this for all of the boolean and categorical variables that we are using to predict heart diseases.
+```{r, echo=TRUE}
+xtabs(~ hd + fbs, data = dataset)
+xtabs(~ hd + restecg, data = dataset)
+```
+
+We find here something that could cause trouble for the "restecg". Only 4 patients represents level 1. This could, potentially, get in the way of finding the best fitting line. However, for now we will just leave it in and see what happens.
+
+```{r, echo=TRUE}
+xtabs(~ hd + exang, data = dataset)
+xtabs(~ hd + slope, data = dataset)
+xtabs(~ hd + ca, data = dataset)
+xtabs(~ hd + thal, data = dataset)
+```
+
+Now, we have looked at all of them, we are ready to do Logistic Regression.
+
+## Logistic Regression with one Indepedent Variable
+
+We will try to predict heart disease using only the gender of each patient.
+
+```{r, echo=TRUE}
+classifier <- glm(hd ~ sex, data = dataset, family = binomial )
+summary(classifier)
+```
+
+The coefficients respond to the following:
+$$ \text{Heart Disease} = -1.0438 + 1.2737 \times \text{the patient is male}  $$
+
+We know that patient is male equals to being 1. And if patient is female, then the value of the patient = 0. So in the above equation, let us predict heart disease for a female, we get the following equation: 
+$$ \text{Heart Disease} = -1.0438 + 1.2737 \times 0  $$
+
+The heart disease comes out to be log(odds) $= -1.0438$. 
+
+For a male patient, the equation becomes 
+$$  \text{Heart Disease} = -1.0438 + 1.2737 \times 1 $$
+$$  \text{Heart Disease} = -1.0438 + 1.2737$$
+
+Since the first term above is the log(odds) of a female having a heart disease, the second term indicates the increase in the log(odds) that a male has of having heart disease. In other words, the second term is the log(odds ratio) of the odds that a male will have heart disease over the odds that a female will have heart disease.
+
+Both the p-values are well below 0.05, and thus, the log(odds) and the log(odds ratio) are both statistically significant.
+
+We see an extra line in the summary of the logistic function which says: "Dispersion parameter for binomial family taken to be 1". 
+When we do "normal" linear regression we estimate both the mean and the variance from the data. In contrast, with logistic regression, we estimate the mean of the data, and the variance is derived from the mean. Since we are not estimating the variance from the data (and, instead just deriving it from the mean), it is possible that the variance is underestimated. If so, we can adjust the dispersion parameter in the summary() command.
+
+
+Then we have "Null deviance" and "Residual deviance". 
+These can be used to compare models, compute $R^2$ and an overall p-value.
+
+Then we have "AIC" (Akaike Information Criterion), which, in this context, is just the Residual Deviance adjusted for the number of parameters in the model. The AIC can be used to compare one model to the other.
+
+Lastly, we have "Number of Fisher Scoring iterations", which just tells us how quickly the glm() function converged on the maximum likelihood estimates for the coefficients.
+
+## Logistic Regression with many independent variables
+
+We will use all the variables to predict the heart disease. 
+
+```{r, echo=TRUE}
+classifier <- glm(hd ~., data = dataset, family = binomial)
+summary(classifier)
+```
+
+1. We see that age is not a useful predictor because it has a large p-value. However, the median age in our dataset was 56, so most of the folks were pretty old and that explains why it was not very useful.
+
+2. Gender is still a good predictor tho.
+
+3. The Residual Deviance and the AIC are both much smaller for this fancy model than they were for the simple model, when we only used gender to predict heart disease.
+
+## McFadden's Pseudo $R^2$
+
+If we want to calculate McFadden's Pseudo $R^2$ we can pull the log-likelihood of the null model out of the logistic variable by getting the value for the null deviance and dividing by $-2$ and we can pull the log-likelihood for the fancy model out of the logistic variable by getting the value of residual deviance and dividing by -2.
+
+```{r, echo=TRUE}
+ll.null <- classifier$null.deviance/(-2)
+
+ll.proposed <- classifier$deviance/(-2)
+
+(ll.null - ll.proposed)/ll.null
+```
+
+Thus, we get a Pseudo $R^2 = 0.55$. This can be interpreted as the overall effect size.
+
+And we can use those same log-likelihoods to calculate a p-value for that $R^2$ using a Chi-square distribution.
+
+```{r, echo=TRUE}
+1 - pchisq(2*(ll.proposed - ll.null), df=(length(classifier$coefficients)-1))
+
+```
+In this case, the p-value is tiny, so the $R^2$ value isnt due to dumb luck.
+
+## Graphing the predicted probabilities
+
+Lastly, we can draw a graph that shows the predicted probabilities that each patient has a heart disease along with their actual heart status. To draw the graph, we start by creating a new dataframe that contains the probabilities of having heart disease along with the actual heart disease status.
+
+Then we sort the data.frame from low probability to high probability.
+
+We add a new column to the data.frame that has the rank of each sample, from low probability to high probility.
+
+```{r, echo=TRUE}
+predicted.dataset <- data.frame(
+  probability.of.hd=classifier$fitted.values,
+  hd = dataset$hd
+)
+
+predicted.dataset <- predicted.dataset[
+  order(predicted.dataset$probability.of.hd, decreasing = FALSE),]
+
+predicted.dataset$rank <- 1:nrow(predicted.dataset)
+```
+
+```{r, echo=TRUE}
+library(ggplot2)
+
+#install.packages('cowplot')
+library(cowplot) # load cowplot library so that ggplot has nice looking defaults
+
+ggplot(data = predicted.dataset, aes(x=rank, y=probability.of.hd) ) + 
+  geom_point(aes(color=hd), alpha=1, shape=4, stroke=2)+ 
+  xlab("Index")+
+  ylab("Predicted probability of getting heart disease")
+```
+
+Most of the patients with heart disease (the ones in turquoise) are predicted to have high probability of having heart disease most of the patients without heart disease (the ones in salmon) are predicted to have a low probability of having heart disease. Thus, our logistic regression has done a pretty good job.
+
+However, we could use cross-validation to get a better idea of how well it might perform with new data.

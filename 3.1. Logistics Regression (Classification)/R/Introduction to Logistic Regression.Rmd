@@ -1,0 +1,146 @@
+---
+title: "Logistic Regression in R"
+author: "Heaven Klair"
+date: "5/6/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Importing the dataset
+
+```{r, echo=TRUE}
+dataset = read.csv('Social_Network_Ads.csv')
+dataset = dataset[3:5]
+```
+
+## Encoding the target feature as a factor
+
+```{r, echo=TRUE}
+dataset$Purchased = factor(dataset$Purchased, levels = c(0,1))
+```
+
+## Splitting the dataset into the Training and Test set
+
+```{r, echo=TRUE}
+# install.packages('caTools')
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Purchased, SplitRatio = 0.75)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+```
+
+## Feature Scaling
+
+We are only going to scale column 1 and 2.
+```{r, echo=TRUE}
+training_set[, 1:2] = scale(training_set[, 1:2])
+test_set[, 1:2] = scale(test_set[, 1:2])
+```
+
+## Fitting Logistic Regression to the Training Set
+
+For Logistic Regression, we take the family as "binomial".
+```{r, echo=TRUE}
+classifier = glm(formula = Purchased ~.,
+                 family = binomial,
+                 data = training_set)
+```
+
+## Predicting the Test Set Results
+
+```{r, echo=TRUE}
+prob_pred = predict(classifier, type = 'response', newdata = test_set[-3])
+```
+
+"type" argument helps us list the probabilities in a single vector.
+
+We are removing the last column in the test set because that column contains the dependent variable (Purchased), which we want to predict.
+
+```{r, echo=TRUE}
+prob_pred
+```
+prob_pred returns the predicted probabilities that the user will buy the SUV (Purchased == 1). The whole number in the prob_pred are the customer's numbers and the decimals values are the probabilities that those customers. Instead of getting probabilities between 0 and 1, we would like to get the probabilities as 1 and 0. We can transform the above to do so.
+
+```{r, echo=TRUE}
+y_pred = ifelse(prob_pred > 0.5, 1, 0)
+y_pred
+```
+
+We can see that y_pred only has values equal to 0 and 1, so this shows a better result of the regression model.
+
+## Making the Confusion Matrix
+
+Confusion Matrix will help us calculate the number of correct and incorrect predictions.
+```{r, echo=TRUE}
+cm = table(test_set[,  3], y_pred)
+cm
+```
+We focus on (1,1) and (2,2) elements in the matrix. These two elements are the number of correct predictions. The elements (1,2) and (2,1) are the incorrect predictions.
+
+
+## Visualizing the Training set results
+
+```{r, echo=TRUE}
+library(ggplot2)
+set = training_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+prob_set = predict(classifier, type = 'response', newdata = grid_set)
+y_grid = ifelse(prob_set > 0.5, 1,0)
+
+ggplot(grid_set) +
+  geom_tile(aes(x = Age, y = EstimatedSalary, fill = factor(y_grid)),
+            show.legend = F) +
+  geom_point(data = set, aes(x = Age, y = EstimatedSalary, color = Purchased),
+             show.legend = F) +
+  scale_fill_manual(values = c("tomato", "springgreen3")) +
+  scale_color_manual(values = c("red3", "green4")) +
+  scale_x_continuous(breaks = seq(floor(min(X1)), ceiling(max(X2)), by = 1)) +
+  labs(title = "Logistic Regression (Training set)",
+       ylab = "Estimated Salary", xlab = "Age")
+```
+
+
+
+# Visualizing the Test set results
+```{r, echo=TRUE}
+library(ggplot2)
+set = test_set
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('Age', 'EstimatedSalary')
+prob_set = predict(classifier, type = 'response', newdata = grid_set)
+y_grid = ifelse(prob_set > 0.5, 1,0)
+
+ggplot(grid_set) +
+  geom_tile(aes(x = Age, y = EstimatedSalary, fill = factor(y_grid)),
+            show.legend = F) +
+  geom_point(data = set, aes(x = Age, y = EstimatedSalary, color = Purchased),
+             show.legend = F) +
+  scale_fill_manual(values = c("tomato", "springgreen3")) +
+  scale_color_manual(values = c("red3", "green4")) +
+  scale_x_continuous(breaks = seq(floor(min(X1)), ceiling(max(X2)), by = 1)) +
+  labs(title = "Logistic Regression (Test set)",
+       ylab = "Estimated Salary", xlab = "Age")
+
+```
+
+
+Green Points = Users who bought the SUV
+Red Points = Users who did bought the SUV
+
+
+
+
+
+
+
+
+
