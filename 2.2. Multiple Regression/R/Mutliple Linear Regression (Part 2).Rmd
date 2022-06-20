@@ -1,0 +1,67 @@
+---
+title: "Multiple Linear Regression (part 2)"
+author: "Heaven Klair"
+date: "5/7/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## The Dataset
+```{r, echo = TRUE}
+mouse.data <- data.frame(
+  size = c(1.4,2.6,1.0,3.7,5.5,3.2,3.0,4.9,6.3),
+  weight = c(0.2,1.8,2.4,3.5,3.9,4.4,5.1,5.6,6.3),
+  tail = c(0.7,1.3,0.7,2.0,3.6,3.0,2.9,3.9,4.0)
+)
+mouse.data
+
+```
+
+## Plot the data
+
+```{r, echo = TRUE}
+plot(mouse.data$weight, mouse.data$size)
+```
+
+We can see a relationship between the weight and the size, so lets do regression to find out.
+
+## Simple Linear Regression
+```{r, echo = TRUE}
+simple.regressor = lm(size ~ weight,
+               data = mouse.data)
+
+print(summary(simple.regressor))
+```
+
+The most important value are at the bottom of the summary function: Adjusted R-squared, and p-value. Both of them together tells us that weight does a good job in predicting the size of the mouse.
+
+## Adding least squares fit line to the graph
+```{r, echo = TRUE}
+plot(mouse.data$weight, mouse.data$size) +
+  abline(simple.regressor, col = "red", lwd=2)
+```
+
+## Multiple Linear Regression
+
+Now we will use weight and tail to predict size.
+
+## Plot the data
+
+```{r, echo = TRUE}
+plot(mouse.data)
+```
+
+## Multiple Linear Regression
+```{r, echo = TRUE}
+multiple.regressor = lm(size ~ .,
+               data = mouse.data)
+
+print(summary(multiple.regressor))
+```
+
+Now we are interested in the Adjusted $R^2$ value. In Multiple Regression, the Coefficients section is more important. The weight row compares the multiple regression to the simple regression. The p-value for weight is 0.4837. It means that using weight and tail isn't significantly better than using tail alone to predict size.
+
+The p-value for tail is 0.0216. It means using weight and tail is significantly better than using weight along to predict size. In summary (in the end), the p-value is 0.003628. It means that using weight and tail to predict size is a good. But if we wanted to save time, we could spare ourselves the agony of weighting mice and just use their tail length to predict size.

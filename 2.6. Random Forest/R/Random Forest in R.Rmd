@@ -1,0 +1,56 @@
+---
+title: "Random Forest"
+author: "Heaven Klair"
+date: "4/17/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Random Forest in R
+
+## Importing the dataset
+```{r, echo=TRUE}
+dataset = read.csv('Position_Salaries.csv')
+dataset = dataset[2:3]
+```
+
+## Fitting Random Forest Regression Model to the Dataset
+```{r, echo=TRUE}
+install.packages('randomForest')
+library(randomForest)
+set.seed(1234)
+regressor = randomForest(x = dataset[1],
+                         y = dataset$Salary,
+                         ntree = 100)
+```
+The syntax for Random Forest is slightly different than regression model we studied. The first input, it will take is the x, which is a data frame or a matrix of predictors, or a formula describing the model to be fitted (for the print method, an randomForest object). dataset[1] is a dataframe, and thus x is a dataframe. The second argument, y is a response vector. If a factor, classification is assumed, otherwise regression is assumed. If omitted, randomForest will run in unsupervised mode. Since dataset$Salary is a vector, y is a vector.
+
+
+## Predicting a new result with Random Forest Regression Model
+```{r, echo=TRUE}
+y_pred = predict(regressor, data.frame(Level = 6.5))
+y_pred
+```
+
+
+
+## Visualising the Random Forest Regression Results
+```{r, echo=TRUE}
+library(ggplot2)
+x_grid = seq(min(dataset$Level), max(dataset$Level), 0.01)
+
+ggplot() + 
+  geom_point(aes(x = dataset$Level, y = dataset$Salary),
+             colour = 'red') +
+  geom_line( aes( x = x_grid, y = predict(regressor, newdata = data.frame( Level = x_grid ))),
+             colour = 'blue') +
+  ggtitle('Regression Model') +
+  xlab('X Label') +
+  ylab('Y Label')
+```
+We simply get more steps, more stairs using the random forest. That is because there are several decision tree algorithms being implemented at one stair. That also concludes why we have a lot more splits in the whole range of levels and also more intervals of different levels. Each horizontal line separated by these vertical lines or one interval is one interval (one split).
+
+We can play with the ntree argument to see how increasing the number of decision tree can change the plot and prediction.

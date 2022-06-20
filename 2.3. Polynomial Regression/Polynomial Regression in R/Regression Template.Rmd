@@ -1,0 +1,89 @@
+---
+title: "Regression Template"
+author: "Heaven Klair"
+date: "4/4/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Regression Template
+This regression Template is very useful for the next non-linear Regression models like SVR, decision tree and random forest, etc.
+
+## Importing the dataset
+```{r, echo=TRUE}
+dataset = read.csv('Position_Salaries.csv')
+dataset = dataset[2:3]
+```
+
+
+## Splitting the dataset into the Training and Test set
+There is no need to split the dataset into training set and test set for the Position_Salaries csv file because the dataset is pretty small, and we want to get as much values as we can for the training purpose. 
+
+If the dataset is large enough, below is the template for splitting the dataset into training and test set.
+
+```{r, echo=TRUE}
+# install.packages('caTools')
+# library(caTools)
+# set.seed(123)
+# split = sample.split(dataset$DependentVariable, SplitRatio = 0.8)
+# training_set = subset(dataset, split == TRUE)
+# test_set = subset(dataset, split == FALSE)
+```
+
+
+## Feature Scaling
+Since, we did not create a Training or Test set, we do not need to do feature scaling. However a template to feature scale the dataset is below
+```{r, echo=TRUE}
+#training_set = scale(training_set)
+#test_set = scale(test_set)
+```
+
+
+## Fitting Regression Model to the Dataset
+```{r, echo=TRUE}
+# Create your regressor here
+```
+
+## Predicting a new result with Regression Model
+```{r, echo=TRUE}
+y_pred = predict(regressor, data.frame(Level = 6.5))
+```
+
+## Visualising the Regression Results
+```{r, echo=TRUE}
+library(ggplot2)
+ggplot() + 
+  geom_point(aes(x = dataset$Level, y = dataset$Salary),
+             colour = 'red') +
+  geom_line(aes(x = dataset$Level, y = predict(regressor, newdata = dataset )),
+             colour = 'blue') +
+  ggtitle('Truth or Bluff (Linear Regression)') +
+  xlab('Level') +
+  ylab('Salary')
+```
+
+## Visualising the Regression Model Results (Higher Resolution)
+```{r, echo=TRUE}
+library(ggplot2)
+x_grid = seq(min(dataset$Level), max(dataset$Level), 0.1)
+
+ggplot() + 
+  geom_point(aes(x = dataset$Level, y = dataset$Salary),
+             colour = 'red') +
+  geom_line( aes( x = x_grid, y = predict(regressor, newdata = data.frame( Level = x_grid ))),
+             colour = 'blue') +
+  ggtitle('Regression Model') +
+  xlab('X Label') +
+  ylab('Y Label')
+```
+"x_grid = seq(min(dataset$Level), max(dataset$Level), 0.1)" creates a 90 level grid with an increment of 0.1. This is done so that we can have more values to plot the graph, and have a smoother curve.
+
+In "geom_line":
+1. "x = dataset$Levels" changed to "x = x_grid": because x_grid is our new values of x.
+2.  "newdata = dataset" changed to "newdata = data.frame(Level = x_grid ))": Because we want to make prediction based on the new values, which are not in the dataset. Since the "newdata" argument is expecting a dataframe, so we need to declare a dataframe first. Intutively, we need to make dataframe of x_grid. Since we would like to create dataframe of new "Levels", we will need to specify "Levels". By doing "data.frame(Level = x_grid )" we are creating a new column of levels containing all the levels in the sequence x_grid here.
+
+
+

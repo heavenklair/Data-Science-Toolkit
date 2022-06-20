@@ -1,0 +1,91 @@
+---
+title: "Multiple Linear Regression"
+author: "Heaven Klair"
+date: "1/30/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Encoding categorical data 
+```{r, echo=TRUE}
+dataset = read.csv('50_Startups.csv')
+dataset$State = factor(dataset$State,
+                         levels = c('New York', 'Florida', 'California'),
+                         labels = c(1, 2, 3))
+```
+
+
+## Splitting the dataset into the Training set and Test set
+```{r, echo=TRUE}
+#install.packages('caTools')
+library(caTools)
+set.seed(123)
+split = sample.split(dataset$Profit, SplitRatio = 0.8)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+```
+
+## Fitting Multiple Linear Regression to the Training set
+```{r, echo=TRUE}
+regressor = lm(formula = Profit ~ R.D.Spend + Administration + Marketing.Spend + State,
+               data = training_set)
+summary(regressor)
+```
+
+The important columns to look at here are the last two: P-value and the Significance level because these columns tell us about the statistical significance of the independent variable onto the dependent variable. This means it tells us if each of the independent variable has a significant impact on on the dependent variable. 
+
+Lower the p-value is, more statistically significant the independent variable is going to be.
+
+In the last column, the first two rows has stars on the side. This means that there will be highly statistical significance of the independent vairable onto the dependent variable.
+
+## Predict the test set Results
+```{r, echo=TRUE}
+y_pred = predict(regressor, newdata = test_set)
+print(y_pred)
+```
+Look at the original values of the profit in the data set and compare them to these, we will see that both of them are quiet similar.
+
+## Building the optimal Model using Backward Elimination
+Steps for Backward Elimination:
+1. Select a significance level to stay in the model (e.g SL = 0.05)
+2. Fit the model with all possible predictors
+3. Consider the predictor with the highest P-value. If P > SL, go to step 4, otherwise go to FINISH
+4. Remove the predictor
+5. Fit the model without this variable. (and Repeat the step 3)
+
+FINSIH: your model is ready
+
+```{r, echo=TRUE}
+regressor = lm(formula = Profit ~ R.D.Spend + Administration + Marketing.Spend + State,
+               data = dataset)
+
+# Changing the data to "dataset" is not necessary, but we do it because we would like to use all the data # to see the correlations.
+summary(regressor)
+```
+We can notice that State Florida and New York has very high P-values, above 90%, so lets remove them first.
+
+
+```{r, echo=TRUE}
+regressor = lm(formula = Profit ~ R.D.Spend + Administration + Marketing.Spend,
+               data = dataset)
+
+summary(regressor)
+
+regressor = lm(formula = Profit ~ R.D.Spend + Marketing.Spend,
+               data = dataset)
+
+summary(regressor)
+
+regressor = lm(formula = Profit ~ R.D.Spend,
+               data = dataset)
+
+summary(regressor)
+
+```
+
+
+
+
